@@ -122,13 +122,21 @@ b2.prototype.createBucket = function(data, callback) {
 /**
  * Retrieve a list of files in a bucket, return an array.
  **/
-b2.prototype.listFiles = function(data, callback) {
+b2.prototype.listFileNames = function(data, callback) {
 
   // Scope
   let cb = callback;
 
   // Prefix data, bucketId required, pagination not.
   let formData = { bucketId: data.bucketId };
+
+  // Optional
+  if(_.has(data, "startFileName"))
+    formData.startFileName = data.startFileName;
+  if(_.has(data, "maxFileCount"))
+    formData.maxFileCount = data.maxFileCount;
+  if(_.has(data, "depth"))
+    formData.depth = data.depth;
 
   // Make call
   this.request.post({ url: "/b2_list_file_names", form: JSON.stringify(formData) }, (err, resp, body) => {
