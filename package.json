@@ -1,0 +1,14 @@
+{
+  "name": "node-b2",
+  "version": "1.0.0",
+  "description": "Interface for BackBlaze B2 object storage.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": {
+    "name": "Richard Onyon",
+    "email": "rich@onyon.com"
+  },
+  "license": "ISC"
+}
