@@ -1,6 +1,6 @@
 {
   "name": "node-backblaze-b2",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Interface for BackBlaze B2 object storage.",
   "main": "index.js",
   "scripts": {
@@ -23,5 +23,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cebollia/node-b2.git"
-  }
+  },
+  "keywords": [
+    "backblaze",
+    "b2",
+    "storage"
+  ]
 }
