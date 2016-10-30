@@ -1,5 +1,5 @@
 {
-  "name": "node-b2",
+  "name": "node-backblaze-b2",
   "version": "1.0.0",
   "description": "Interface for BackBlaze B2 object storage.",
   "main": "index.js",
@@ -10,5 +10,18 @@
     "name": "Richard Onyon",
     "email": "rich@onyon.com"
   },
-  "license": "ISC"
+  "bugs": {
+    "url": "https://github.com/cebollia/node-b2/issues"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "request": "latest",
+    "underscore": "latest",
+    "sha1-file": "latest",
+    "async": "latest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cebollia/node-b2.git"
+  }
 }
