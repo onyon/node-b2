@@ -86,7 +86,8 @@ let input = {
   bucketId: "string",
   file: "/path/to/file.jpg",
   fileName: "filename/on/b2.jpg",
-  contentType: "image/jpeg" // Optional, mime type to use.
+  contentType: "image/jpeg", // Optional, mime type to use.
+  retryAttempts: 3  // Optional, how many attempts at an upload. This compensates for the B2 503 on upload.
 };
 b2.uploadFile(input, (err, data) => {});
 ```
