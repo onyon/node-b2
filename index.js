@@ -255,6 +255,9 @@ b2.prototype.uploadFile = function(data, callback) {
   let cb = callback;
   let self = this;
 
+  // Automatic retry, default is 3 attempts.
+  let retryAttempts = _.has(data, "retry") && (new Number).isInteger(data.retry)?data.retry:3;
+
   // Run the following actions in parallel.
   // 1) Get an upload URL from B2
   // 2) Get the SHA1 of the file we are uploading.
@@ -305,17 +308,28 @@ b2.prototype.uploadFile = function(data, callback) {
       }
     };
 
-    // Upload file
-    request.post(options, (err, resp, body) => {
+    // Method to post file to B2
+    let postFile = function(callback) {
 
-      if(err || resp.statusCode !== 200) {
-        console.error(err, resp);
-        return cb(new Error("Unable to upload file."), {});
+      request.post(options, (err, resp, body) => {
+
+        if(err || resp.statusCode !== 200)
+          return callback(err, {});
+
+        return callback(null, JSON.parse(body));
+
+      });
+
+    };
+
+    // Wrap it so if it fails (often a 503 busy) that it automatically attempts another upload
+    // with an exponential backoff. Then callback to invoker.
+    async.retry({
+      times: retryAttempts, 
+      interval: function(retryCount) {
+        return 50 * Math.pow(2, retryCount);
       }
-
-      return cb(null, JSON.parse(body));
- 
-    });
+    }, postFile, cb);
 
   });
 
