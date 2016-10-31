@@ -85,7 +85,8 @@ Upload a local file to B2, and return the file objects. This will perform all ne
 let input = {
   bucketId: "string",
   file: "/path/to/file.jpg",
-  fileName: "filename/on/b2.jpg"
+  fileName: "filename/on/b2.jpg",
+  contentType: "image/jpeg" // Optional, mime type to use.
 };
 b2.uploadFile(input, (err, data) => {});
 ```
