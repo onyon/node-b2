@@ -298,7 +298,7 @@ b2.prototype.uploadFile = function(data, callback) {
       body: data.readStream,
       headers: {
         "Authorization": data.endpoint.authorizationToken,
-        "Content-Type": "b2/x-auto",
+        "Content-Type": (_.has(data, "contentType")?data.contentType:"b2/x-auto"),
         "Content-Length": data.stat.size,
         "X-Bz-File-Name": data.fileName,
         "X-Bz-Content-Sha1": data.sha1
