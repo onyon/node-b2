@@ -2,6 +2,7 @@
 
 const _       = require("underscore");
 const fs      = require("fs");
+const https   = require("https");
 const sha1    = require("sha1-file");
 const async   = require("async");
 const request = require("request");
@@ -12,6 +13,7 @@ const conf    = require("./conf.json");
  **/
 let b2 = function(object) {
 
+  this.authorized = false;
   this.accountId = object.accountId;
   this.applicationKey = object.applicationKey;
   this.apiUrl = conf.apiUrl;
@@ -47,6 +49,7 @@ b2.prototype.authorize = function(callback) {
     }
 
     // Set return data
+    this.authorized         = true;
     this.apiUrl             = body.apiUrl;
     this.authorizationToken = body.authorizationToken;
     this.downloadUrl        = body.downloadUrl;
@@ -276,7 +279,7 @@ b2.prototype.uploadFile = function(data, callback) {
   },
   function(callback) {
 
-    sha1(data.file, function(err, sum) {
+    sha1(data.file, (err, sum) => {
       data.sha1 = sum;
       callback(null, true);
     });
@@ -345,22 +348,18 @@ b2.prototype.deleteFile = function(data, callback) {
 /**
  * Return a read stream for file.
  **/
-b2.prototype.getFile = function(data, callback) {
+b2.prototype.getFileStream = function(data, callback) {
 
-  // Scope
-  let cb = callback;
+  // Create file URL
+  let reqData = {
+    method: "GET",
+    host: this.downloadUrl.substring(8), // Remove HTTPS:// prefix
+    path: "/file/" + data.bucketName + "/" + data.fileName,
+    headers: {
+      "Authorization": this.authorizationToken
+  }};
 
-  // First we need to get an authorization token for file
-  this.getAuthToken({
-    bucketId: data.bucketId,
-    fileNamePrefix: data.fileName,
-    duration: 60
-  }, function(err, token) {
-
-    if(err)
-      return cb(err, {});
-
-  });
+  return https.get(reqData, callback);
 
 };
 
@@ -369,21 +368,48 @@ b2.prototype.getFile = function(data, callback) {
  **/
 b2.prototype.downloadFile = function(data, callback) {
 
-  // Scope
-  let cb = callback;
+  // Validate Input
+  if(!_.has(data, "bucketName") ||
+     !_.has(data, "fileName") ||
+     !_.has(data, "file"))
+    return callback(new Error("Missing required data. { bucketName, fileName, file }"), {});
 
-  // First we need to get an authorization token for file
-  this.getAuthToken({ 
-    bucketId: data.bucketId,
-    fileNamePrefix: data.fileName,
-    duration: 60
-  }, function(err, token) {
+  // Get File Pipe
+  var stream = this.getFileStream(data, (resp) => {
 
-    if(err) 
-      return cb(err, {});
+    // Write file to disk
+    resp.pipe(fs.createWriteStream(data.file, { flags: "w+" }));
 
-    fs.createWriteStream(data.output);
+    // Cleanup
+    resp.on("end", () => {
 
+      // Do we want to verify sha1 of file
+      if(!_.has(data, "verify") && data.verify === true) {
+
+        // Get the SHA1
+        sha1(data.file, (err, sum) => {
+
+          // Error getting sha1
+          if(err)
+            return callback(err, resp);
+          
+          // SHA1 sum mismatch error
+          if(sum !== resp.headers["x-bz-content-sha1"])
+            return callback(new Error("SHA1 sum mismatch."), resp);
+
+          return callback(null, resp);
+
+        });
+
+      } else 
+        return callback(null, resp);
+
+    });
+
+  });
+  // Error Connecting
+  stream.on("error", (err) => {
+    callback(err, {});
   });
 
 };

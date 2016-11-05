@@ -105,4 +105,47 @@ let input = {
 b2.getAuthToken(input, (err, data) => {});
 ```
 
+#### Save File Locally ([b2_download_file_by_name](https://www.backblaze.com/b2/docs/b2_download_file_by_name.html))
+
+Retrieve a file from B2 and save it to local disk. If the file already exists, it will attempt to truncate the file and write it again. Returns the finished http.ClientRequest object.
+
+```javascript
+let input = {
+  bucketName: "string",
+  fileName: "filename/on/b2.jpg",
+  file: "/path/to/file.jpg",
+  verify: false // Optional, Verify sha1 matches the one sent by b2. 
+};
+b2.downloadFile(input, (err, data) => {});
+```
+
+#### Retrieve File as http(s).ClientRequest Object ([b2_download_file_by_name](https://www.backblaze.com/b2/docs/b2_download_file_by_name.html))
+
+Retrieve an [https.ClientRequest](https://nodejs.org/api/http.html#http_class_http_clientrequest) object for minipulation. This allows to modify and object retrieved from B2 without needing to write it to disk first.
+
+```javascript
+let input = {
+  bucketName: "string",
+  fileName: "string"
+};
+var stream = b2.getFileStream(input, (resp) => {
+
+  // Retrieve data in chunks
+  res.on("data", (chunk) => {
+    console.log(chunk); // Buffer.
+  });
+
+  // Write file to disk.
+  resp.pipe(fs.createWriteStream("./myData.ext", { flags: "w+" }));  
+
+});
+// Error downloading object.
+stream.on("error", (err) => {
+  console.log(err);
+});
+```
+
+
+
+
 **Please report bugs and feature requests to [Github](https://github.com/cebollia/node-b2/issues).**
