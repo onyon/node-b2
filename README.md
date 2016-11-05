@@ -131,7 +131,7 @@ let input = {
 var stream = b2.getFileStream(input, (resp) => {
 
   // Retrieve data in chunks
-  res.on("data", (chunk) => {
+  resp.on("data", (chunk) => {
     console.log(chunk); // Buffer.
   });
 
