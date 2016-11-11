@@ -45,7 +45,7 @@ b2.prototype.authorize = function(callback) {
     // Invalid response
     if(err || resp.statusCode !== 200) {
       console.error(err, resp);
-      cb(new Error("Unable to authenticate against API."), {});
+      try { cb(new Error("Unable to authenticate against API."), {}); } catch(e) {}
     }
 
     // Set return data
