@@ -105,7 +105,7 @@ b2.prototype.createBucket = function(data, callback) {
 
   // Prefix data
   let formData = { accountId: this.accountId, bucketName: data.bucketName, bucketType: "allPrivate" };
-  if(_.has(data, "bucketType"))
+  if("bucketType" in data)
     formData.bucketType = data.bucketType;
 
   // Make call
@@ -134,11 +134,11 @@ b2.prototype.listFileNames = function(data, callback) {
   let formData = { bucketId: data.bucketId };
 
   // Optional
-  if(_.has(data, "startFileName"))
+  if("startFileName" in data)
     formData.startFileName = data.startFileName;
-  if(_.has(data, "maxFileCount"))
+  if("maxFileCount" in data)
     formData.maxFileCount = data.maxFileCount;
-  if(_.has(data, "depth"))
+  if("depth" in data)
     formData.depth = data.depth;
 
   // Make call
@@ -167,11 +167,11 @@ b2.prototype.listFileVersions = function(data, callback) {
   let formData = { bucketId: data.bucketId };
  
   // Optional
-  if(_.has(data, "startFileName"))
+  if("startFileName" in data)
     formData.startFileName = data.startFileName;
-  if(_.has(data, "startFileId"))
+  if("startFileId" in data)
     formData.startFileId = data.startFileId;
-  if(_.has(data, "maxFileCount"))
+  if("maxFileCount" in data)
     formData.maxFileCount = data.maxFileCount;
 
   // Make call
@@ -197,8 +197,7 @@ b2.prototype.deleteFileVersions = function(data, callback) {
   let cb = callback;
 
   // Validate Input
-  if(!_.has(data, "fileName") ||
-     !_.has(data, "fileId"))
+  if(!("fileName" in data) || !("fileId" in data))
     return cb(new Error("Missing required input. { fileName, fileId }"), {});
 
   // Prefix data
@@ -259,7 +258,7 @@ b2.prototype.uploadFile = function(data, callback) {
   let self = this;
 
   // Automatic retry, default is 3 attempts.
-  let retryAttempts = _.has(data, "retry") && (new Number).isInteger(data.retry)?data.retry:3;
+  let retryAttempts = ("retry" in data) && (new Number).isInteger(data.retry)?data.retry:3;
 
   // Run the following actions in parallel.
   // 1) Get an upload URL from B2
@@ -304,7 +303,7 @@ b2.prototype.uploadFile = function(data, callback) {
       body: data.readStream,
       headers: {
         "Authorization": data.endpoint.authorizationToken,
-        "Content-Type": (_.has(data, "contentType")?data.contentType:"b2/x-auto"),
+        "Content-Type": (("contentType" in data)?data.contentType:"b2/x-auto"),
         "Content-Length": data.stat.size,
         "X-Bz-File-Name": data.fileName,
         "X-Bz-Content-Sha1": data.sha1
@@ -369,9 +368,7 @@ b2.prototype.getFileStream = function(data, callback) {
 b2.prototype.downloadFile = function(data, callback) {
 
   // Validate Input
-  if(!_.has(data, "bucketName") ||
-     !_.has(data, "fileName") ||
-     !_.has(data, "file"))
+  if(!("bucketName" in data) || !("fileName" in data) || !("file" in data))
     return callback(new Error("Missing required data. { bucketName, fileName, file }"), {});
 
   // Get File Pipe
@@ -384,7 +381,7 @@ b2.prototype.downloadFile = function(data, callback) {
     resp.on("end", () => {
 
       // Do we want to verify sha1 of file
-      if(!_.has(data, "verify") && data.verify === true) {
+      if(("verify" in data) && data.verify === true) {
 
         // Get the SHA1
         sha1(data.file, (err, sum) => {
@@ -448,9 +445,7 @@ b2.prototype.getAuthToken = function(data, callback) {
   let cb = callback;
 
   // Validate input
-  if(!_.has(data, "bucketId") ||
-     !_.has(data, "fileNamePrefix") ||
-     !_.has(data, "duration"))
+  if(!("bucketId" in data) || !("fileNamePrefix" in data) || !("duration" in data))
     return cb(new Error("Missing required data. { bucketId, fileNamePrefix, duration }"), null);
 
   // Prefix data
