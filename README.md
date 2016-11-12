@@ -33,7 +33,7 @@ b2.listBuckets((err, data) => {});
 
 Creates a new bucket and returns the associated bucket object.
 ```javascript
-let input = { 
+let input = {
   bucketName: "string",
   bucketType: "allPublic" // Also accepts allPrivate.
 };
@@ -44,7 +44,7 @@ b2.createBucket(input, (err, data) => {});
 
 Returns an array with file names that exist in a bucket. This has a maximum of 1000 items returned, and if nextFileName exist within the response, you will need to re-request with the startFileName filter to get the next set of data.
 ```javascript
-let input = { 
+let input = {
   bucketId: "string",
   startFileName: "string", // Optional
   maxFileCount: int, // Optional
@@ -57,7 +57,7 @@ b2.listFileNames(input, (err, data) => {});
 
 Returns an array with file versions that exist in a bucket. This has a maximum of 1000 items returned, and if nextFileName/nextFileId exist within the response, you will need to re-request with the startFileName/startFileId filter to get the next set of data.
 ```javascript
-let input = { 
+let input = {
   bucketId: "string",
   startFileName: "string", // Optional
   startFileId: "string", // Optional
@@ -68,7 +68,7 @@ b2.listFileVersions(input, (err, data) => {});
 
 #### Get Upload URL ([b2_get_upload_url](https://www.backblaze.com/b2/docs/b2_get_upload_url.html))
 
-Return an upload url object. Use this is you plan to upload a file manually, if you use the b2.uploadFile function, then this is called on your behalf. 
+Return an upload url object. Use this is you plan to upload a file manually, if you use the b2.uploadFile function, then this is called on your behalf.
 
 ```javascript
 let input = {
@@ -114,7 +114,7 @@ let input = {
   bucketName: "string",
   fileName: "filename/on/b2.jpg",
   file: "/path/to/file.jpg",
-  verify: false // Optional, Verify sha1 matches the one sent by b2. 
+  verify: false // Optional, Verify sha1 matches the one sent by b2.
 };
 b2.downloadFile(input, (err, data) => {});
 ```
@@ -136,7 +136,7 @@ var stream = b2.getFileStream(input, (resp) => {
   });
 
   // Write file to disk.
-  resp.pipe(fs.createWriteStream("./myData.ext", { flags: "w+" }));  
+  resp.pipe(fs.createWriteStream("./myData.ext", { flags: "w+" }));
 
 });
 // Error downloading object.
@@ -145,7 +145,22 @@ stream.on("error", (err) => {
 });
 ```
 
-
+#### Error Object
+If any API calls return an error, the callback will return a modified [Error Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error). The following data is an  example of an unable to authenticate error. All errors follow this standard form, with the exception of **err.status = 0 representing an inability to contact the BackBlaze API**. 
+```javascript
+let err = {
+  api: {  // This was left in here to allow BackBlaze to update their error response object in the future.
+    code: 'bad_auth_token',
+    message: 'Invalid authorization token',
+    status: 401
+  },
+  code: 'bad_auth_token',
+  status: 401,
+  message: 'Invalid authorization token',
+  requestObject: { [http.clientRequest() object] }
+};
+```
 
 
 **Please report bugs and feature requests to [Github](https://github.com/cebollia/node-b2/issues).**
+

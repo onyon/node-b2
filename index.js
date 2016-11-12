@@ -25,9 +25,6 @@ let b2 = function(object) {
  **/
 b2.prototype.authorize = function(callback) {
 
-  // Scope
-  let cb = callback;
-
   // Setup Request (basic authentication)
   let options = {
     url: this.apiUrl + "/b2_authorize_account",
@@ -43,10 +40,8 @@ b2.prototype.authorize = function(callback) {
   request(options, (err, resp, body) => {
 
     // Invalid response
-    if(err || resp.statusCode !== 200) {
-      console.error(err, resp);
-      try { cb(new Error("Unable to authenticate against API."), {}); } catch(e) {}
-    }
+    if(err || resp.statusCode !== 200)
+      try { callback(b2Error(resp), {}); } finally { return; }
 
     // Set return data
     this.authorized         = true;
@@ -66,7 +61,7 @@ b2.prototype.authorize = function(callback) {
     });
 
     // Return to parent
-    try { cb(null, body); } catch(e) {};
+    try { callback(null, body); } catch(e) {}
 
   });
 
@@ -78,18 +73,13 @@ b2.prototype.authorize = function(callback) {
  **/
 b2.prototype.listBuckets = function(callback) {
 
-  // Scope
-  let cb = callback;
-
   // Make call
   this.request.get("/b2_list_buckets?accountId=" + this.accountId, (err, resp, body) => {
 
-    if(err || resp.statusCode !== 200) {
-      console.error(err, resp);
-      return cb(new Error("Unable to retrieve buckets."), {});
-    }
+    if(err || resp.statusCode !== 200)
+      return callback(b2Error(resp), {});
 
-    cb(null, body);
+    callback(null, body);
 
   });
 
@@ -100,9 +90,6 @@ b2.prototype.listBuckets = function(callback) {
  **/
 b2.prototype.createBucket = function(data, callback) {
 
-  // Scope
-  let cb = callback;
-
   // Prefix data
   let formData = { accountId: this.accountId, bucketName: data.bucketName, bucketType: "allPrivate" };
   if("bucketType" in data)
@@ -111,12 +98,10 @@ b2.prototype.createBucket = function(data, callback) {
   // Make call
   this.request.post({ url: "/b2_create_bucket", form: JSON.stringify(formData) }, (err, resp, body) => {
 
-    if(err || resp.statusCode !== 200) {
-      console.error(err, resp);
-      return cb(new Error("Unable to retrieve files."), {});
-    }
+    if(err || resp.statusCode !== 200)
+      return callback(b2Error(resp), {});
 
-    cb(null, body.bucketId);
+    callback(null, body);
 
   });
 
@@ -126,9 +111,6 @@ b2.prototype.createBucket = function(data, callback) {
  * Retrieve a list of files in a bucket, return an array.
  **/
 b2.prototype.listFileNames = function(data, callback) {
-
-  // Scope
-  let cb = callback;
 
   // Prefix data, bucketId required, pagination not.
   let formData = { bucketId: data.bucketId };
@@ -144,12 +126,10 @@ b2.prototype.listFileNames = function(data, callback) {
   // Make call
   this.request.post({ url: "/b2_list_file_names", form: JSON.stringify(formData) }, (err, resp, body) => {
 
-    if(err || resp.statusCode !== 200) {
-      console.error(err, resp);
-      return cb(new Error("Unable to retrieve files."), {});
-    }
+    if(err || resp.statusCode !== 200) 
+      return callback(b2Error(resp), {});
 
-    cb(null, body);
+    callback(null, body);
 
   });
 
@@ -159,9 +139,6 @@ b2.prototype.listFileNames = function(data, callback) {
  * Retrieve a list of file versions.
  **/
 b2.prototype.listFileVersions = function(data, callback) {
-
-  // Scope
-  let cb = callback;
 
   // Prefix data.
   let formData = { bucketId: data.bucketId };
@@ -177,12 +154,10 @@ b2.prototype.listFileVersions = function(data, callback) {
   // Make call
   this.request.post({ url: "/b2_list_file_versions", form: JSON.stringify(formData) }, (err, resp, body) => {
 
-    if(err || resp.statusCode !== 200) {
-      console.error(err, resp);
-      return cb(new Error("Unable to retrieve files."), {});
-    }
+    if(err || resp.statusCode !== 200)
+      return callback(b2Error(resp), {});
 
-    cb(null, body);
+    callback(null, body);
 
   });
 
@@ -193,12 +168,9 @@ b2.prototype.listFileVersions = function(data, callback) {
  **/
 b2.prototype.deleteFileVersions = function(data, callback) {
 
-  // Scope
-  let cb = callback;
-
   // Validate Input
   if(!("fileName" in data) || !("fileId" in data))
-    return cb(new Error("Missing required input. { fileName, fileId }"), {});
+    return callback(new Error("Missing required input. { fileName, fileId }"), {});
 
   // Prefix data
   let formData = { fileName: data.fileName, fileId: data.fileId };
@@ -206,12 +178,10 @@ b2.prototype.deleteFileVersions = function(data, callback) {
   // Make Call
   this.request.post({ url: "/b2_delete_file_version", form: JSON.stringify(formData) }, (err, resp, body) => {
 
-    if(err || resp.statusCode !== 200) {
-      console.error(err, resp);
-      return cb(new Error("Unable to retrieve files."), {});
-    }
+    if(err || resp.statusCode !== 200) 
+      return callback(b2Error(resp), {});
 
-    cb(null, body);
+    callback(null, body);
 
   });
 
@@ -223,22 +193,16 @@ b2.prototype.deleteFileVersions = function(data, callback) {
  **/
 b2.prototype.getUploadUrl = function(bucketId, callback) {
 
-  // Scope
-  let cb = callback;
-
   // POST the bucketId into the request
   let formData = { bucketId: bucketId };
 
   // Make call
   this.request.post({ url: "/b2_get_upload_url", form: JSON.stringify(formData) }, (err, resp, body) => {
 
-    if(err || resp.statusCode !== 200) {
-      console.error(err, resp);
-      return cb(new Error("Unable to retrieve files."), {});
-    }
+    if(err || resp.statusCode !== 200)
+      return callback(b2Error(resp), {}); 
 
-    // Return just the upload URL
-    cb(null, body);
+    callback(null, body);
 
   });
 
@@ -316,7 +280,7 @@ b2.prototype.uploadFile = function(data, callback) {
       request.post(options, (err, resp, body) => {
 
         if(err || resp.statusCode !== 200)
-          return callback(err, {});
+          return callback(b2Error(resp), {});
 
         return callback(null, JSON.parse(body));
 
@@ -406,7 +370,7 @@ b2.prototype.downloadFile = function(data, callback) {
   });
   // Error Connecting
   stream.on("error", (err) => {
-    callback(err, {});
+    callback(b2Error(stream), {});
   });
 
 };
@@ -416,21 +380,16 @@ b2.prototype.downloadFile = function(data, callback) {
  **/
 b2.prototype.getFileInfo = function(fileId, callback) {
 
-  // Scope
-  let cb = callback;
-
   // Prefix data
   let formData = { fileId: fileId };
 
   // Make call
   this.request.post({ url: "/b2_get_file_info", form: JSON.stringify(formData) }, (err, resp, body) => {
 
-    if(err || resp.statusCode !== 200) {
-      console.error(err, resp);
-      return cb(new Error("Unable to retrieve file information."), {});
-    }
+    if(err || resp.statusCode !== 200)
+      return callback(b2Error(resp), {});
 
-    cb(null, body);
+    callback(null, body);
 
   });
 
@@ -441,12 +400,9 @@ b2.prototype.getFileInfo = function(fileId, callback) {
  **/
 b2.prototype.getAuthToken = function(data, callback) {
 
-  // Scope
-  let cb = callback;
-
   // Validate input
   if(!("bucketId" in data) || !("fileNamePrefix" in data) || !("duration" in data))
-    return cb(new Error("Missing required data. { bucketId, fileNamePrefix, duration }"), null);
+    return callback(new Error("Missing required data. { bucketId, fileNamePrefix, duration }"), null);
 
   // Prefix data
   let formData = { 
@@ -458,14 +414,52 @@ b2.prototype.getAuthToken = function(data, callback) {
   // Make call
   this.request.post({ url: "/b2_get_download_authorization", form: JSON.stringify(formData) }, (err, resp, body) => {
 
-    if(err || resp.statusCode !== 200) {
-      console.error(err, resp);
-      return cb(new Error("Unable to generate authorization token."), {});
-    }
+    if(err || resp.statusCode !== 200) 
+      return callback(b2Error(resp), {});
 
-    cb(null, body.authorizationToken);
+    callback(null, body.authorizationToken);
 
   });
+
+};
+
+/**
+ * Create an error object based on API results.
+ * http.requestObject
+ **/
+let b2Error = function(data) {
+
+  let err = function(data) {
+
+    // Attempt to grab the error from the request. If we don't validate this as a proper API return
+    // from backblaze, then we will provide a generic error return instead. (DNS error, unplugged
+    // network cable, backblaze down, etc)
+    try {
+
+      if(!("body" in data) || typeof(data.body) !== "object")
+        throw "Request body did not return as an object.";
+
+      this.api = data.body;
+
+    } catch(e) {
+
+      this.api = { status: 0, code: "application_error", message: "Error connection to B2 service." };
+
+    // Assign the other bits.
+    } finally {
+
+      this.requestObject = data;
+      this.status  = this.api.status;
+      this.code    = this.api.code;
+      this.message = this.api.message;
+
+    }
+
+  };
+
+  // Assign our function to error & return.
+  err.prototype = Error.prototype;
+  return new err(data);
 
 };
 
