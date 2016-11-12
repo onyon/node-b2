@@ -71,7 +71,13 @@ b2.prototype.authorize = function(callback) {
  * Retrieve a list of buckets in the account, return an array.
  * @return bucketId
  **/
-b2.prototype.listBuckets = function(callback) {
+b2.prototype.listBuckets = function(...input) {
+
+  // Check to see if there is a filter
+  let filter = typeof(input[0]) === "string"?input[0]:false;
+
+  // Assign the callback
+  let callback = input[input.length - 1];
 
   // Make call
   this.request.get("/b2_list_buckets?accountId=" + this.accountId, (err, resp, body) => {
@@ -79,7 +85,17 @@ b2.prototype.listBuckets = function(callback) {
     if(err || resp.statusCode !== 200)
       return callback(b2Error(resp), {});
 
-    callback(null, body);
+    // If we are not using a filter, just return the callback now
+    if(!filter) return callback(null, body);
+
+    // Otherwise iterate over the string in an attempt to find what we are looking for.
+    let ret;
+    body.buckets.map((bucket) => {
+      if(bucket.bucketName === filter)
+        ret = bucket;
+    });
+
+    return callback(null, ret);
 
   });
 
@@ -151,13 +167,30 @@ b2.prototype.listFileVersions = function(data, callback) {
   if("maxFileCount" in data)
     formData.maxFileCount = data.maxFileCount;
 
+  // Are we doing strict checking for a filename.
+  let strict = "strict" in data?data.strict:false;
+
   // Make call
   this.request.post({ url: "/b2_list_file_versions", form: JSON.stringify(formData) }, (err, resp, body) => {
 
     if(err || resp.statusCode !== 200)
       return callback(b2Error(resp), {});
 
-    callback(null, body);
+    // If we are not doing strict checking let's just pass data along
+    if(!strict) return callback(null, body);
+
+    // If we are doing strict checking, let's throw all the results into a new array
+    // of exact matches and then return the result.
+    let ret = {
+      files: [],
+      nextFileId: body.nextFileId,
+      nextFileName: body.nextFileName
+    }
+    body.files.map((file) => {
+      if(file.fileName === formData.startFileName)
+        ret.files.push(file);
+    });
+    return callback(null, ret);
 
   });
 
@@ -166,11 +199,11 @@ b2.prototype.listFileVersions = function(data, callback) {
 /**
  * Delete a file version.
  **/
-b2.prototype.deleteFileVersions = function(data, callback) {
+b2.prototype.deleteFile = function(data, callback) {
 
   // Validate Input
   if(!("fileName" in data) || !("fileId" in data))
-    return callback(new Error("Missing required input. { fileName, fileId }"), {});
+    return callback(b2Error("Missing required input. { fileName or fileId }"), {});
 
   // Prefix data
   let formData = { fileName: data.fileName, fileId: data.fileId };
@@ -178,8 +211,9 @@ b2.prototype.deleteFileVersions = function(data, callback) {
   // Make Call
   this.request.post({ url: "/b2_delete_file_version", form: JSON.stringify(formData) }, (err, resp, body) => {
 
-    if(err || resp.statusCode !== 200) 
-      return callback(b2Error(resp), {});
+    if(err || resp.statusCode !== 200) { 
+      try { callback(b2Error(resp), {}); } finally { return; }
+    }
 
     callback(null, body);
 
@@ -333,7 +367,7 @@ b2.prototype.downloadFile = function(data, callback) {
 
   // Validate Input
   if(!("bucketName" in data) || !("fileName" in data) || !("file" in data))
-    return callback(new Error("Missing required data. { bucketName, fileName, file }"), {});
+    return callback(b2Error("Missing required data. { bucketName, fileName, file }"), {});
 
   // Get File Pipe
   var stream = this.getFileStream(data, (resp) => {
@@ -356,7 +390,7 @@ b2.prototype.downloadFile = function(data, callback) {
           
           // SHA1 sum mismatch error
           if(sum !== resp.headers["x-bz-content-sha1"])
-            return callback(new Error("SHA1 sum mismatch."), resp);
+            return callback(b2Error("SHA1 sum mismatch."), resp);
 
           return callback(null, resp);
 
@@ -378,13 +412,54 @@ b2.prototype.downloadFile = function(data, callback) {
 /**
  * Get file info.
  **/
-b2.prototype.getFileInfo = function(fileId, callback) {
+b2.prototype.getFileInfo = function(data, callback) {
 
-  // Prefix data
-  let formData = { fileId: fileId };
+  // If we are getting a file by bucket name and file name. 
+  if("fileName" in data && "bucketName" in data) {
+
+    this.listBuckets(data.bucketName, (err, res) => {
+
+      // There was an error, just return as normal
+      if(err) return callback(err, res);
+
+      // Let's setup the object, pass it along into ourself. Then callback the original callback.
+      this.getFileInfo({ fileName: data.fileName, bucketId: res.bucketId }, callback);
+
+    });
+
+    return;
+
+  }
+
+  // If the fileName was passed in, let's assume we need to grab the fileid
+  // first before we get the fileName.
+  if("fileName" in data && "bucketId" in data) {
+
+    // Assign correct prefix name, assign strict checking to true.
+    data.startFileName = data.fileName;
+    data.strict = true;
+
+    this.listFileVersions(data, (err, res) => {
+      
+      // There was an error, let's just return as normal
+      if(err) 
+        return callback(err, res);
+
+      // We were unable to find an exact match
+      if(res.files.length < 1) 
+        return callback(b2Error("Unable to locate file."), {});
+
+      // Let's setup the object, pass it along into our self. Then callback the original callback.
+      this.getFileInfo({ fileId: res.files[0]["fileId"] }, callback);
+
+    });
+
+    return;
+
+  }
 
   // Make call
-  this.request.post({ url: "/b2_get_file_info", form: JSON.stringify(formData) }, (err, resp, body) => {
+  this.request.post({ url: "/b2_get_file_info", form: JSON.stringify(data) }, (err, resp, body) => {
 
     if(err || resp.statusCode !== 200)
       return callback(b2Error(resp), {});
@@ -402,7 +477,7 @@ b2.prototype.getAuthToken = function(data, callback) {
 
   // Validate input
   if(!("bucketId" in data) || !("fileNamePrefix" in data) || !("duration" in data))
-    return callback(new Error("Missing required data. { bucketId, fileNamePrefix, duration }"), null);
+    return callback(b2Error("Missing required data. { bucketId, fileNamePrefix, duration }"), {});
 
   // Prefix data
   let formData = { 
@@ -443,7 +518,9 @@ let b2Error = function(data) {
 
     } catch(e) {
 
-      this.api = { status: 0, code: "application_error", message: "Error connection to B2 service." };
+      // Setup default JSON with error message.
+      let message = typeof(data) === "string"?data:"Error connecting to B2 service.";
+      this.api = { status: 0, code: "application_error", message: message };
 
     // Assign the other bits.
     } finally {

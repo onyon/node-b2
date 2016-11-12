@@ -1,6 +1,6 @@
 {
   "name": "node-backblaze-b2",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Interface for BackBlaze B2 object storage.",
   "main": "index.js",
   "scripts": {

@@ -1,6 +1,6 @@
 # Interface to BackBlaze B2
 
-This is a simple interface to the BackBlaze B2 object storage API. Right now it has primitive errors and retry methods. At a future date a more consistent error interface will be integrated. All callback data is returned in (err, data) form.
+This is an interface into the BackBlaze B2 API with a series of helper functions that will allow you to shortcut some calls.
 
 ### Install
 
@@ -24,9 +24,15 @@ b2.authorize((err, data) => {});
 
 #### List Buckets ([b2_list_buckets](https://www.backblaze.com/b2/docs/b2_list_buckets.html))
 
-Return a list of buckets associated with the account.
+Return a list of buckets associated with the account. You can optionally pass in a string which will only return that specific bucket's object.
+
+**List all buckets**
 ```javascript
 b2.listBuckets((err, data) => {});
+```
+**List individual bucket**
+```javascript
+b2.listBuckets("my-bucket", (err, data) => {});
 ```
 
 #### Create Bucket ([b2_create_bucket](https://www.backblaze.com/b2/docs/b2_create_bucket.html))
@@ -62,8 +68,30 @@ let input = {
   startFileName: "string", // Optional
   startFileId: "string", // Optional
   maxFileCount: int // Optional
+  strict: bool, // Optional. When used with startFileName, it will only return results with the exact filename.
 };
 b2.listFileVersions(input, (err, data) => {});
+```
+
+#### Get File Info ([b2_get_file_info](https://www.backblaze.com/b2/docs/b2_get_file_info.html))
+
+Return an object of file details. It needs either fileId, or fileName to be passed. If fileName is passed in, it will automatically find the fileId of the latest version of the file, as returned in b2.listFileVersions.
+
+```javascript
+let input = { fileId: "string" };  // Get file info by ID (1 API call)
+let input = { fileName: "string", bucketId: "string" }; // Get file info by Name and Bucket ID (2 API calls)
+let input = { fileName: "string", bucketName: "string" }; // Get file info by Name and Bucket Name (3 API calls)
+b2.getFileInfo(input, (err, data) => {});
+```
+
+#### Delete File ([b2_delete_file_version](https://www.backblaze.com/b2/docs/b2_delete_file_version.html))
+
+Delete a file. If *fileName* is passed in, and there are multiple versions, it will delete the latest version. If *fileId* is passed in, then it will only delete that specific version of the file. Callback is optional.
+
+```javascript
+let input = { fileId: "string" };
+let input = { fileName: "string" };
+b2.deleteFile(input, (err) => {});
 ```
 
 #### Get Upload URL ([b2_get_upload_url](https://www.backblaze.com/b2/docs/b2_get_upload_url.html))
@@ -146,7 +174,7 @@ stream.on("error", (err) => {
 ```
 
 #### Error Object
-If any API calls return an error, the callback will return a modified [Error Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error). The following data is an  example of an unable to authenticate error. All errors follow this standard form, with the exception of **err.status = 0 representing an inability to contact the BackBlaze API**. 
+If any API calls return an error, the callback will return a modified [Error Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error). The following data is an  example of an unable to authenticate error. All errors follow this standard form, with the exception of **err.status = 0 represents a local application error, or inability to contact B2 API**. 
 ```javascript
 let err = {
   api: {  // This was left in here to allow BackBlaze to update their error response object in the future.
