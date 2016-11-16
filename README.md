@@ -86,11 +86,10 @@ b2.getFileInfo(input, (err, data) => {});
 
 #### Delete File ([b2_delete_file_version](https://www.backblaze.com/b2/docs/b2_delete_file_version.html))
 
-Delete a file. If *fileName* is passed in, and there are multiple versions, it will delete the latest version. If *fileId* is passed in, then it will only delete that specific version of the file. Callback is optional.
+Delete a file. This requires both the fileName and fileId to be passed into it. It will only delete the fileId specified, so if there are multiple versions of the file, you'll need to delete each one.
 
 ```javascript
-let input = { fileId: "string" };
-let input = { fileName: "string" };
+let input = { fileId: "string", fileName: "string" };
 b2.deleteFile(input, (err) => {});
 ```
 
