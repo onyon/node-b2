@@ -336,13 +336,6 @@ b2.prototype.uploadFile = function(data, callback) {
 };
 
 /**
- * Delete all versions of a file.
- **/
-b2.prototype.deleteFile = function(data, callback) {
-
-};
-
-/**
  * Return a read stream for file.
  **/
 b2.prototype.getFileStream = function(data, callback) {
