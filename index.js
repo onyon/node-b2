@@ -27,7 +27,7 @@ b2.prototype.authorize = function(callback) {
 
   // Setup Request (basic authentication)
   let options = {
-    url: this.apiUrl + "/b2_authorize_account",
+    url: conf.apiUrl + "/b2_authorize_account",
     method: "GET",
     json: true,
     auth: {
