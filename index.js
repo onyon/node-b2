@@ -1,6 +1,5 @@
 'use strict';
 
-const _       = require("underscore");
 const fs      = require("fs");
 const https   = require("https");
 const sha1    = require("sha1-file");
