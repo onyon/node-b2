@@ -366,10 +366,11 @@ b2.prototype.downloadFile = function(data, callback) {
   var stream = this.getFileStream(data, (resp) => {
 
     // Write file to disk
-    resp.pipe(fs.createWriteStream(data.file, { flags: "w+" }));
+    var outputStream = fs.createWriteStream(data.file, { flags: "w+" })
+    resp.pipe(outputStream);
 
     // Cleanup
-    resp.on("end", () => {
+    outputStream.on("finish", () => {
 
       // Do we want to verify sha1 of file
       if(("verify" in data) && data.verify === true) {
