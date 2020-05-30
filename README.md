@@ -190,4 +190,3 @@ let err = {
 
 
 **Please report bugs and feature requests to [Github](https://github.com/cebollia/node-b2/issues).**
-
